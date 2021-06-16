@@ -2,16 +2,16 @@ const products = require('./products')
 const autoCatch = require('./lib/auto-catch')
 
 module.exports = autoCatch({
-    getProducts,
+    listProducts,
     getProduct,
     createProducts,
     editProduct,
     deleteProduct
     })
 
-async function getProducts(req, res) {
+async function listProducts(req, res) {
     const { limit = 25, offset = 0 , tag} = req.query
-    dataProducts = await products.listFromJSON({
+    dataProducts = await products.list({
         offset: Number(offset),
         limit: Number(limit),
         tag
@@ -21,20 +21,23 @@ async function getProducts(req, res) {
 
 async function getProduct(req, res, next) {
     const { id } = req.params
-    const product = await products.getProductById(id)
+    const product = await products.get(id)
     if (!product) return next()
     res.json(product)
 }
 
 async function createProducts(req, res, next) {
-    console.log('Request body:', req.body)
+    const product = await products.create(req.body)
     res.json(req.body)
 }
 
 async function editProduct(req, res, next) {
-    console.log(req.body)
+    const change = req.body
+    const product = await products.edit(req.params.id, change)
+    res.json(product)
 }
 
 async function deleteProduct(req, res, next) {
+    await products.remove(req.params.id)
     res.json({ Success: true })   
 }

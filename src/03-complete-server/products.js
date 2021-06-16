@@ -1,26 +1,58 @@
 const fs = require('fs').promises
+const cuid = require('cuid')
 
 const path = require('path')
 
+const db = require('./db')
+
 module.exports = {
-    listFromJSON,
-    getProductById
+    list,
+    get,
+    create,
+    edit,
+    remove,
 }
 
-const dataPath = path.join(__dirname, './products.json')
+const Product = db.model('Products', {
+    _id: { type: String, default: cuid },
+    description: String,
+    imgThumb: String,
+    img: String,
+    link: String,
+    userId: String,
+    userName: String,
+    userLink: String,
+    tags: { type: [String], index: true }
+    })
 
-async function listFromJSON(opt = {}) {
+async function list(opt = {}) {
     const { offset = 0, limit = 25, tag} = opt
-    data = await fs.readFile(dataPath)
-    return JSON.parse(data)
-    .filter((p, i) => !tag || p.tags.indexOf(tag) >= 0 )
-    .slice(offset, offset + limit)
+    const query = tag ? {tags: tag} : {}
+    const products = await Product.find(query).sort({_id: 1}).skip(offset).limit(limit)
+
+    return products
 }
 
-async function getProductById(id) {
-    const products = JSON.parse(await fs.readFile(dataPath))
-    for (let i = 0; i < products.length; i++) {
-        if (products[i]._id === id) {return products[i]}
+async function get(_id) {
+    const product = await Product.findById(_id)
+    return product
+}
+
+
+async function create (fields) {
+    const product = await new Product(fields).save()
+    return product
     }
-    return null
+
+async function edit(_id, change) {
+    const product = await get(_id)
+    Object.keys(change).forEach(function (key) {
+        product[key] = change[key]
+        })
+    product.save()
+    return product
+}
+
+async function remove(_id) {
+    await Product.deleteOne({ _id })
 }
